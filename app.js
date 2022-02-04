@@ -41,14 +41,15 @@ const authenticateUser = (request, response, next) => {
     jwtToken = authHeader.split(" ")[1];
   }
   if (jwtToken === undefined) {
-    response.status(400);
+    response.status(401);
     response.send("Invalid JWT Token");
   } else {
     jwt.verify(jwtToken, "sairam", async (error, payload) => {
       if (error) {
-        response.status(400);
+        response.status(401);
         response.send("Invalid JWT Token");
       } else {
+        request.username = payload.username;
         next();
       }
     });
@@ -56,7 +57,7 @@ const authenticateUser = (request, response, next) => {
 };
 app.post("/register", async (request, response) => {
   const { username, name, password, gender } = request.body;
-  //   const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await bcrypt.hash(password, 10);
   const selectUserQuery = `SELECT * FROM user WHERE username = '${username}';`;
   const databaseUser = await database.get(selectUserQuery);
 
@@ -66,9 +67,9 @@ app.post("/register", async (request, response) => {
       user (username, name, password, gender)
      VALUES
       (
-       '${username}',
-       '${password}',
        '${name}',
+       '${username}',
+       '${hashedPassword}',
        '${gender}' 
       );`;
     if (validatePassword(password)) {
@@ -82,5 +83,38 @@ app.post("/register", async (request, response) => {
     response.status(400);
     response.send("User already exists");
   }
+});
+app.post("/login/", async (request, response) => {
+  const { username, password } = request.body;
+  let getUserQuery = `SELECT * FROM user where username = '${username}';`;
+  let isUser = await database.get(getUserQuery);
+  if (isUser === undefined) {
+    response.status(400);
+    response.send("Invalid user");
+  } else {
+    const isPasswordMatched = await bcrypt.compare(password, isUser.password);
+    if (isPasswordMatched === true) {
+      const payload = {
+        username: username,
+      };
+      const jwtToken = jwt.sign(payload, "sairam");
+      response.send(jwtToken);
+    } else {
+      response.status(400);
+      response.send("Invalid password");
+    }
+  }
+});
+app.get("/user/tweets/feed/", authenticateUser, async (request, response) => {
+  let { username } = request;
+  const userIdQuery = `SELECT user_id from user where username = '${username}';`;
+  let userId = await database.get(userIdQuery);
+  let selectUserQuery = `SELECT distinct username, tweet,date_time AS dateTime
+    FROM user JOIN follower on user.user_id = follower_user_id join tweet on 
+    follower_user_id = tweet.user_id
+    order by date_time desc
+    limit 4;`;
+  let tweets = await database.all(selectUserQuery);
+  response.send(tweets);
 });
 module.exports = app;
