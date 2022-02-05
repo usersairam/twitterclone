@@ -1,20 +1,35 @@
-POST http://localhost:3000/register/
+POST http://localhost:3000/register/ 
+Content-Type: application/json 
 
-Content-Content-Type: applicaation/json
-
-
-{
-  "username": "adam_richard",
-  "password": "richard_567666666",
-  "name": "Adam Richard",
+ {
+  "username": "venkatdri",
+  "password": "pulsar@11",
+  "name": "bro",
   "gender": "male"
 }
+
 ###
 
-POST http://localhost:3000/login/
 
-Content-Content-Type: applicaation/json
+POST http://localhost:3000/login/
+Content-Type: application/json 
+
 {
-  "username":"JoeBiden",
-  "password":"biden@123"
+   "username": "JoeBiden",
+  "password": "biden@123"
 }
+###
+GET http://localhost:3000/user/tweets/feed/
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IkpvZUJpZGVuIiwiaWF0IjoxNjQ0MDMxMTI0fQ.wonYyTUQVxj1xZBs_rJkz_YAjeqOPru1t0YsPbKaaDQ
+
+###
+GET http://localhost:3000/user/following/
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IkpvZUJpZGVuIiwiaWF0IjoxNjQ0MDM2ODE5fQ.hTeqxysDQoiO8COURMyz-XD_gAnABRgF4Jpep43VXDs
+
+###
+GET http://localhost:3000/user/followers/
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IkpvZUJpZGVuIiwiaWF0IjoxNjQ0MDM2ODE5fQ.hTeqxysDQoiO8COURMyz-XD_gAnABRgF4Jpep43VXDs
+
+###
+GET http://localhost:3000/tweets/3/
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IkpvZUJpZGVuIiwiaWF0IjoxNjQ0MDM2ODE5fQ.hTeqxysDQoiO8COURMyz-XD_gAnABRgF4Jpep43VXDs
