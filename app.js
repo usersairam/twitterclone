@@ -67,8 +67,8 @@ app.post("/register", async (request, response) => {
       user (username, name, password, gender)
      VALUES
       (
-       '${name}',
        '${username}',
+       '${name}',
        '${hashedPassword}',
        '${gender}' 
       );`;
@@ -98,7 +98,7 @@ app.post("/login/", async (request, response) => {
         username: username,
       };
       const jwtToken = jwt.sign(payload, "sairam");
-      response.send(jwtToken);
+      response.send(`JWT Token :${jwtToken}`);
     } else {
       response.status(400);
       response.send("Invalid password");
@@ -107,14 +107,68 @@ app.post("/login/", async (request, response) => {
 });
 app.get("/user/tweets/feed/", authenticateUser, async (request, response) => {
   let { username } = request;
-  const userIdQuery = `SELECT user_id from user where username = '${username}';`;
+  let userIdQuery = `SELECT user_id from user where username = '${username}';`;
   let userId = await database.get(userIdQuery);
+  const { user_id } = userId;
   let selectUserQuery = `SELECT distinct username, tweet,date_time AS dateTime
-    FROM user JOIN follower on user.user_id = follower_user_id join tweet on 
-    follower_user_id = tweet.user_id
+    FROM user join follower on user.user_id = following_user_id join tweet on
+    following_user_id = tweet.user_id
+    where follower_user_id=${user_id}
     order by date_time desc
     limit 4;`;
   let tweets = await database.all(selectUserQuery);
   response.send(tweets);
+  console.log(username);
 });
+app.get("/user/following", authenticateUser, async (request, response) => {
+  let { username } = request;
+  let userIdQuery = `SELECT user_id from user where username = '${username}';`;
+  let userId = await database.get(userIdQuery);
+  const { user_id } = userId;
+  let getFollowingList = `SELECT name from user join follower on user_id = following_user_id
+    where follower_user_id = ${user_id};`;
+  let following_list = await database.all(getFollowingList);
+  response.send(following_list);
+  console.log(user_id);
+});
+app.get("/user/followers/", authenticateUser, async (request, response) => {
+  let { username } = request;
+  let userIdQuery = `SELECT user_id from user where username = '${username}';`;
+  let userId = await database.get(userIdQuery);
+  const { user_id } = userId;
+  let getFollowersListQuery = `SELECT name from user join follower
+    on user.user_id = follower_user_id 
+    where following_user_id = ${user_id};`;
+  let followersList = await database.all(getFollowersListQuery);
+  response.send(followersList);
+});
+app.get("/tweets/:tweetId/", authenticateUser, async (request, response) => {
+  let { tweetId } = request.params;
+  let { username } = request;
+  let userIdQuery = `SELECT user_id from user where username = '${username}';`;
+  let userId = await database.get(userIdQuery);
+  const { user_id } = userId;
+  let getFollowingList = `SELECT user_id AS follower_id from user join follower on user_id = following_user_id
+    where follower_user_id = ${user_id};`;
+  let following_list = await database.all(getFollowingList);
+  let followersList = [];
+  for (let each of following_list) {
+    followersList.push(each.follower_id);
+  }
+  let tweetSelectedUserIdQuery = `SELECT user_id AS tweetedUser from tweet
+  WHERE tweet_id = ${tweetId};`;
+  let selectedUser = await database.get(tweetSelectedUserIdQuery);
+  let { tweetedUser } = selectedUser;
+  if (followersList.includes(tweetedUser)) {
+    let likedTweetQuery = `select tweet, count(like.user_id) as likes,
+    count(reply.user_id) as replies
+    from tweet join like on tweet.tweet_id = like.tweet_id natural join reply  
+    group by tweet.tweet_id
+    having tweet.tweet_id=10;`;
+  } else {
+    response.status(401);
+    response.send("Invalid Request");
+  }
+});
+
 module.exports = app;
