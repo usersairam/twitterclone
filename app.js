@@ -193,7 +193,6 @@ app.get("/tweets/:tweetId/", authenticateUser, async (request, response) => {
       dateTime: `${dateTime}`,
     };
     response.send(responseObject);
-    console.log(responseObject);
   } else {
     response.status(401);
     response.send("Invalid Request");
@@ -294,5 +293,32 @@ app.get("/user/tweets/", authenticateUser, async (request, response) => {
   //     dateTime: tweets.map((each) => each.date_time),
   //   };
   //   response.send(responseObject);
+});
+app.post("/user/tweets/", authenticateUser, async (request, response) => {
+  let insertedQuery = `insert into tweet (tweet)
+    values('The Mornings...');`;
+  await database.run(insertedQuery);
+  response.send("Created a Tweet");
+});
+app.delete("/tweets/:tweetId", authenticateUser, async (request, response) => {
+  let { tweetId } = request.params;
+  let { username } = request;
+  let userIdQuery = `SELECT user_id from user where username = '${username}';`;
+  let userId = await database.get(userIdQuery);
+  const { user_id } = userId;
+  let deleteRequestQuery = `select user_id as delete_id from tweet where
+  tweet_id = ${tweetId};`;
+  let deleteRequestId = await database.get(deleteRequestQuery);
+  const { delete_id } = deleteRequestId;
+  console.log(delete_id);
+  console.log(user_id);
+  if (user_id === delete_id) {
+    let deleteQuery = `delete from tweet where tweet_id = ${tweetId};`;
+    await database.run(deleteQuery);
+    response.send("Tweet Removed");
+  } else {
+    response.status(401);
+    response.send("Invalid Request");
+  }
 });
 module.exports = app;
