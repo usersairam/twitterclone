@@ -98,7 +98,7 @@ app.post("/login/", async (request, response) => {
         username: username,
       };
       const jwtToken = jwt.sign(payload, "sairam");
-      response.send(`JWT Token :${jwtToken}`);
+      response.send(jwtToken);
     } else {
       response.status(400);
       response.send("Invalid password");
@@ -163,12 +163,47 @@ app.get("/tweets/:tweetId/", authenticateUser, async (request, response) => {
     let likedTweetQuery = `select tweet, count(like.user_id) as likes,
     count(reply.user_id) as replies
     from tweet join like on tweet.tweet_id = like.tweet_id natural join reply  
-    group by tweet.tweet_id
-    having tweet.tweet_id=10;`;
+    where tweet.tweet_id = ${tweetId};`;
   } else {
     response.status(401);
     response.send("Invalid Request");
   }
 });
+app.get(
+  "/tweets/:tweetId/likes/",
+  authenticateUser,
+  async (request, response) => {
+    let { tweetId } = request.params;
+    let { username } = request;
+    let userIdQuery = `SELECT user_id from user where username = '${username}';`;
+    let userId = await database.get(userIdQuery);
+    const { user_id } = userId;
+    let getFollowingList = `SELECT user_id AS follower_id from user join follower on user_id = following_user_id
+    where follower_user_id = ${user_id};`;
+    let following_list = await database.all(getFollowingList);
+    let followersList = [];
+    for (let each of following_list) {
+      followersList.push(each.follower_id);
+    }
+    let tweetSelectedUserIdQuery = `SELECT user_id AS tweetedUser from tweet
+  WHERE tweet_id = ${tweetId};`;
+    let selectedUser = await database.get(tweetSelectedUserIdQuery);
+    let { tweetedUser } = selectedUser;
+    if (followersList.includes(tweetedUser)) {
+      let likedUserQuery = `SELECT username as likes from user natural join
+        like 
+        where tweet_id = ${tweetId};`;
+      let likedUser = await database.all(likedUserQuery);
+      let likedList = [];
+      for (let each of likedUser) {
+        likedList.push(each.likes);
+      }
+      response.send(likedUser);
+    } else {
+      response.status(401);
+      response.send("Invalid Request");
+    }
+  }
+);
 
 module.exports = app;
